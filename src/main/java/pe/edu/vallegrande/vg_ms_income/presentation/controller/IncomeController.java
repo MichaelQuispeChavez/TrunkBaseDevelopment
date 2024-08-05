@@ -28,6 +28,12 @@ public class IncomeController {
         return incomeService.getAll();
     }
 
+    @PostMapping("/create")
+    public Mono<ResponseEntity<Income>> createIncome(@ModelAttribute UserIncome userDto,
+            @RequestParam("files") MultipartFile[] files) {
+        return incomeService.creatIncome(userDto, files)
+                .defaultIfEmpty(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+    }
 
     @PatchMapping("/update/{incomeId}")
     public Mono<ResponseEntity<Income>> updateIncome(@PathVariable String incomeId,

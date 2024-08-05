@@ -121,7 +121,40 @@ public class IncomeService {
 
 
 
+    public Mono<ResponseEntity<Income>> creatIncome(UserIncome userDto, MultipartFile[] files) {
+        Income income = new Income();
+        income.setIncomeId(UUID.randomUUID().toString());
+        income.setPersonId(userDto.getPersonId());
+        income.setCelebrantId(userDto.getCelebrantId());
+        income.setDateEvent(userDto.getDateEvent());
+        income.setCategories(userDto.getCategories());
+        income.setType(userDto.getType());
+        income.setFileUrls(List.of());
+        income.setStatusPayment(PENDING);
+        income.setCreatedAt(LocalDateTime.now());
+        income.setUpdatedAt(LocalDateTime.now());
+        income.setStatusNotification(false);
+        log.info("CREANDO INGRESO");
+        return Mono
+                .fromCallable(() -> storageFeignClient.uploadFile(files, FOLDER_NAME, income.getPersonId(),
+                        income.getIncomeId()))
+                .flatMap(responseEntity -> responseEntity.getStatusCode().is2xxSuccessful()
+                        ? extractFileUrls(responseEntity.getBody())
+                        : Mono.error(new RuntimeException("Failed to upload files to storage service")))
+                .doOnNext(income::setFileUrls)
+                .flatMap(urls -> incomeRepository.save(income))
+                .map(savedAccounting -> new ResponseEntity<>(savedAccounting, HttpStatus.CREATED))
+                .onErrorReturn(new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR));
+    }
 
+private Mono<Tuple2<User, User>> retrieveUsers(Income income, AdminIncomeDto adminDto) {
+    Mono<User> personMono = userWebClient.getUserById(income.getPersonId());
+    Mono<User> personConfirmedMono = Mono.empty();
+    if (adminDto.getPersonConfirmedId() != null) {
+        personConfirmedMono = userWebClient.getUserById(adminDto.getPersonConfirmedId());
+    }
+    return Mono.zip(personMono, personConfirmedMono);
+}
 
 private Mono<Income> updateIncomeDetails(Income income, AdminIncomeDto adminDto) {
     income.setComment(adminDto.getComment());
