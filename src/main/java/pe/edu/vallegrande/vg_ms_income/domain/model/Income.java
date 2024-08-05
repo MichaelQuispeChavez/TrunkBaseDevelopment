@@ -27,14 +27,4 @@ public class Income {
     private boolean statusNotification;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-
-    @Transient
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private User celebrant;
-    @Transient
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private User user;
-    @Transient
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private User personConfirmed;
 }
